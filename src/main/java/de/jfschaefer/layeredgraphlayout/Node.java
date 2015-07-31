@@ -7,10 +7,10 @@ import java.util.*;
  */
 
 public class Node<V, E> {
-    private V originalNode;
-    private double width, height;
-    private Set<Edge<V, E>> outgoingEdges;
-    private Set<Edge<V, E>> ingoingEdges;
+    protected V originalNode;
+    protected double width, height;
+    protected Set<Edge<V, E>> outgoingEdges;
+    protected Set<Edge<V, E>> ingoingEdges;
 
     public Node(V original, double width, double height) {
         originalNode = original;
@@ -28,21 +28,21 @@ public class Node<V, E> {
         outgoingEdges.add(edge);
     }
 
-    void reverseIngoingEdge(Edge<V, E> edge) {
+    public void reverseIngoingEdge(Edge<V, E> edge) {
         assert ingoingEdges.remove(edge);
         outgoingEdges.add(edge);
     }
 
-    void reverseOutgoingEdge(Edge<V, E> edge) {
+    public void reverseOutgoingEdge(Edge<V, E> edge) {
         assert outgoingEdges.remove(edge);
         ingoingEdges.add(edge);
     }
 
-    final Set<Edge<V, E>> getOutgoingEdges() {
+    public final Set<Edge<V, E>> getOutgoingEdges() {
         return outgoingEdges;
     }
 
-    final Set<Edge<V, E>> getIngoingEdges() {
+    public final Set<Edge<V, E>> getIngoingEdges() {
         return ingoingEdges;
     }
 

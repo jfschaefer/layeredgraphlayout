@@ -1,4 +1,7 @@
-package de.jfschaefer.layeredgraphlayout;
+package de.jfschaefer.layeredgraphlayout.gengraph;
+
+import de.jfschaefer.layeredgraphlayout.Edge;
+import de.jfschaefer.layeredgraphlayout.Node;
 
 import java.util.*;
 
@@ -7,10 +10,10 @@ import java.util.*;
  */
 
 public class GenGraph<V, E> {
-    Map<V, Node<V, E>> nodeMap;
-    Map<E, Edge<V, E>> edgeMap;
-    boolean locked = false;
-    boolean cyclesRemoved = false;
+    protected Map<V, Node<V, E>> nodeMap;
+    protected Map<E, Edge<V, E>> edgeMap;
+    protected boolean locked = false;
+    protected boolean cyclesRemoved = false;
 
     public GenGraph() {
         nodeMap = new HashMap<V, Node<V, E>>();

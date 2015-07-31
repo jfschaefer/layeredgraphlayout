@@ -5,10 +5,10 @@ package de.jfschaefer.layeredgraphlayout;
  */
 
 public class Edge<V, E> {
-    E originalEdge;
-    Node<V, E> from, to;
-    boolean flipped = false;
-    boolean locked = false;
+    protected E originalEdge;
+    protected Node<V, E> from, to;
+    protected boolean flipped = false;
+    protected boolean locked = false;
 
     public Edge(E original, Node<V, E> from, Node<V, E> to) {
         originalEdge = original;
