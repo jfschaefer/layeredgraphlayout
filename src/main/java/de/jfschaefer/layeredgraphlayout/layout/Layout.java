@@ -81,11 +81,16 @@ public class Layout<V, E> {
 
     void lock() {
         locked = true;
-        shift = new Vector(-minX, -minY);
+        shift = new Vector(-minX + config.getGraphPadding(), -minY + config.getGraphPadding());
     }
 
     public Point getNodeCenter(V node) {
         return nodeMap.get(node).second;
+    }
+
+    public Pair<Double, Double> getNodeSize(V node) {
+        Node<V, E> n = nodeMap.get(node).first;
+        return new Pair<Double, Double>(n.getWidth(), n.getHeight());
     }
 
     public Point getNodeTopLeft(V node) {
@@ -100,17 +105,21 @@ public class Layout<V, E> {
         return Util.getBottomRightCorner(n, center);
     }
 
+    public ArrayList<EdgeSegment> getEdgePosition(E edge) {
+        return edgeMap.get(edge).second;
+    }
+
     public Vector getShift() {
         if (!locked) lock();
         return shift;
     }
 
     public double getWidth() {
-        return maxX - minX;
+        return maxX - minX + 2 * config.getGraphPadding();
     }
 
     public double getHeight() {
-        return maxY - minY;
+        return maxY - minY + 2 * config.getGraphPadding();
     }
 
     public void updateBoundaries(Point p) {
@@ -119,5 +128,13 @@ public class Layout<V, E> {
         if (p.x > maxX) maxX = p.x;
         if (p.y < minY) minY = p.y;
         if (p.y > maxY) maxY = p.y;
+    }
+
+    public final Set<V> getNodeSet() {
+        return nodeMap.keySet();
+    }
+
+    public final Set<E> getEdgeSet() {
+        return edgeMap.keySet();
     }
 }
