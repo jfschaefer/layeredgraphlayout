@@ -10,6 +10,7 @@ public class LNode {
     protected boolean dummy;
     protected int layer;
     protected double width;
+    // The pixel offset of the center
     protected double xPos = 0d;
 
     protected Set<LNode> parents;
@@ -70,5 +71,17 @@ public class LNode {
 
     public void setXPos(double xpos) {
         xPos = xpos;
+    }
+
+    public double getXPosLeft() {
+        return xPos - 0.5 * width;
+    }
+
+    public double getXPosRight() {
+        return xPos + 0.5 * width;
+    }
+
+    public void setXPosLeft(double pos) {
+        xPos = pos + 0.5 * width;
     }
 }

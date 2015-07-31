@@ -19,6 +19,11 @@ public class Layer {
     }
 
     public void addNode(LNode node) {
+        node.setPos(elements.size());
         elements.add(node);
+    }
+
+    ArrayList<LNode> getElements() {
+        return elements;
     }
 }
