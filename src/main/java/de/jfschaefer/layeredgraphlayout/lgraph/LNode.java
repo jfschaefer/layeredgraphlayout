@@ -1,0 +1,74 @@
+package de.jfschaefer.layeredgraphlayout.lgraph;
+
+import java.util.*;
+
+/**
+ * Created by jfschaefer on 7/31/15.
+ */
+
+public class LNode {
+    protected boolean dummy;
+    protected int layer;
+    protected double width;
+    protected double xPos = 0d;
+
+    protected Set<LNode> parents;
+    protected Set<LNode> children;
+
+    protected LGraphConfig config;
+
+    protected int pos = -1;
+
+    public LNode(int layer, boolean isDummy, double width, LGraphConfig config) {
+        this.layer = layer;
+        dummy = isDummy;
+        this.width = width;
+        parents = new HashSet<LNode>();
+        children = new HashSet<LNode>();
+        this.config = config;
+    }
+
+    public void setPos(int pos) {
+        this.pos = pos;
+    }
+
+    public int getPos() {
+        return pos;
+    }
+
+    public void addChild(LNode child) {
+        children.add(child);
+    }
+
+    public void addParent(LNode parent) {
+        parents.add(parent);
+    }
+
+    public final Set<LNode> getChildren() {
+        return children;
+    }
+
+    public final Set<LNode> getParents() {
+        return parents;
+    }
+
+    public int getLayer() {
+        return layer;
+    }
+
+    public boolean isDummy() {
+        return dummy;
+    }
+
+    public double getWidth() {
+        return width;
+    }
+
+    public double getXPos() {
+        return xPos;
+    }
+
+    public void setXPos(double xpos) {
+        xPos = xpos;
+    }
+}
