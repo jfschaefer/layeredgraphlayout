@@ -23,6 +23,7 @@ public class Tree<V, E> {
         TreeNode<V, E> p = nodeMap.get(parent);
         assert p != null;
         TreeNode<V, E> c = new TreeNode<V, E>(child, width, height);
+        nodeMap.put(child, c);
         Edge<V, E> e = new Edge<V, E>(edge, p, c);
         p.addChild(e);
     }

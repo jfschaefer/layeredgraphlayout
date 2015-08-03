@@ -10,6 +10,7 @@ public class LNode {
     protected boolean dummy;
     protected int layer;
     protected double width;
+    protected double height;
     // The pixel offset of the center
     protected double xPos = 0d;
 
@@ -20,10 +21,11 @@ public class LNode {
 
     protected int pos = -1;
 
-    public LNode(int layer, boolean isDummy, double width, LGraphConfig config) {
+    public LNode(int layer, boolean isDummy, double width, double height, LGraphConfig config) {
         this.layer = layer;
         dummy = isDummy;
         this.width = width;
+        this.height = height;
         parents = new HashSet<LNode>();
         children = new HashSet<LNode>();
         this.config = config;
@@ -63,6 +65,10 @@ public class LNode {
 
     public double getWidth() {
         return width;
+    }
+
+    public double getHeight() {
+        return height;
     }
 
     public double getXPos() {

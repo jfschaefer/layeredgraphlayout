@@ -35,8 +35,8 @@ public class LGraph<V, E> {
     public void addNode(Node<V, E> node, int layer) {
         assert !placed;
         assert !nodeMap.containsKey(node);
-        LNode n = new LNode(layer, false, node.getWidth(), config);
-        while (numberOfLayers < layer) {
+        LNode n = new LNode(layer, false, node.getWidth(), node.getHeight(), config);
+        while (numberOfLayers <= layer) {
             layers.add(new Layer(numberOfLayers++, config));
         }
         layers.get(layer).addNode(n);
@@ -57,7 +57,7 @@ public class LGraph<V, E> {
         int layer = from.getLayer() + 1;
         LNode oldNode = from;
         while (layer < to.getLayer()) {
-            LNode newNode = new LNode(layer, true, config.getDummyNodeWidth(), config);
+            LNode newNode = new LNode(layer, true, config.getDummyNodeWidth(), 0d, config);
             layers.get(layer).addNode(newNode);
             nodes.add(newNode);
             layer ++;
@@ -82,43 +82,76 @@ public class LGraph<V, E> {
         // ONLY WORKS WELL FOR TREES
 
         placed = true;
+        boolean somethingHasChanged;
 
-        // top down
-        for (Layer layer : layers) {
-            double nextPos = 0d;
-            for (LNode node : layer.getElements()) {
-                double parentPos;
-                if (node.getParents().isEmpty()) {
-                    parentPos = 0d;
-                } else {
-                    parentPos = 0d;
-                    for (LNode parent : node.getParents()) {    //parent set should be singleton, but just in case
-                        parentPos += parent.getXPos();
+        do {
+            somethingHasChanged = false;
+            // top down
+            for (Layer layer : layers) {
+                double nextPos = 0d;
+                for (LNode node : layer.getElements()) {
+                    double parentPos;
+                    if (node.getParents().isEmpty()) {
+                        parentPos = 0d;
+                    } else {
+                        parentPos = 0d;
+                        for (LNode parent : node.getParents()) {    //parent set should be singleton, but just in case
+                            parentPos += parent.getXPos();
+                        }
+                        parentPos /= node.getParents().size();
+                        parentPos -= node.getWidth() * 0.5;
                     }
-                    parentPos /= node.getParents().size() - node.getWidth() * 0.5;
+                    node.setXPosLeft(Math.max(nextPos, Math.max(parentPos, node.getXPosLeft())));
+                    nextPos = node.getXPosRight() + config.getGapBetweenNodes();
                 }
-                node.setXPosLeft(Math.max(nextPos, parentPos));
-                nextPos = node.getXPosLeft() + config.getGapBetweenNodes();
             }
-        }
 
-        // bottom up
-        for (int i = layers.size() - 1; i >= 0; i--) {
-            Layer layer = layers.get(i);
-            for (LNode node : layer.getElements()) {
-                double newPos;
-                if (node.getChildren().isEmpty()) {
-                    newPos = node.getXPos();
-                } else {
-                    newPos = 0d;
-                    for (LNode child : node.getChildren()) {
-                        newPos += child.getPos();
+            // bottom up
+            for (int i = layers.size() - 1; i >= 0; i--) {
+                Layer layer = layers.get(i);
+                // for (LNode node : layer.getElements()) {
+                for (int j = 0; j < layer.getElements().size(); j++) {
+                    LNode node = layer.getElements().get(j);
+                    double newPos;
+                    if (node.getChildren().isEmpty()) {
+                        newPos = node.getXPos();
+                    } else {
+                        newPos = 0d;
+                        for (LNode child : node.getChildren()) {
+                            newPos += child.getXPos();
+                        }
+                        newPos /= node.getChildren().size();
                     }
-                    newPos /= node.getChildren().size();
+
+                    node.setXPos(Math.max(newPos, node.getXPos()));
+
+                    for (int k = j + 1; k < layer.getElements().size(); k++) {
+                        LNode prev = layer.getElements().get(k - 1);
+                        LNode cur = layer.getElements().get(k);
+
+                        double delta = cur.getXPosLeft() - (prev.getXPosRight() + config.gapBetweenNodes);
+                        if (delta < 0) {
+                            cur.setXPos(cur.getXPos() - delta);
+                        } else {
+                            break;
+                        }
+                    }
                 }
-                node.setXPos(newPos);
             }
-        }
+
+            // fix nodes too close
+            for (Layer layer : layers) {
+                for (int j = 1; j < layer.getElements().size(); j++) {
+                    LNode prev = layer.getElements().get(j - 1);
+                    LNode cur = layer.getElements().get(j);
+                    double delta = cur.getXPosLeft() - (prev.getXPosRight() + config.gapBetweenNodes);
+                    if (delta < 0) {
+                        somethingHasChanged = true;
+                        cur.setXPos(cur.getXPos() - delta);
+                    }
+                }
+            }
+        } while (somethingHasChanged);
     }
 
 
@@ -136,8 +169,11 @@ public class LGraph<V, E> {
 
         for (Map.Entry<Edge<V, E>, ArrayList<LNode>> entry : edgeMap.entrySet()) {
             ArrayList<Point> points = new ArrayList<Point>();
-            for (LNode lnode : entry.getValue()) {
-                points.add(new Point(lnode.getXPos(), lnode.getLayer() * config.getLayerDistance()));
+            //for (LNode lnode : entry.getValue()) {
+            for (int i = 0; i < entry.getValue().size(); i++) {
+                LNode lnode = entry.getValue().get(i);
+                points.add(new Point(lnode.getXPos(), lnode.getLayer() * config.getLayerDistance() +
+                        0.5 * (i == 0 ? 1 : -1) * (!lnode.isDummy() ? lnode.getHeight() : 0)));
             }
             layout.addEdge(entry.getKey(), points);
         }
