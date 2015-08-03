@@ -7,6 +7,7 @@ package de.jfschaefer.layeredgraphlayout.layout;
 public class Point {
     public final double x;
     public final double y;
+    public static final Point ORIGIN = new Point(0d, 0d);
 
     public Point(double x, double y) {
         this.x = x;

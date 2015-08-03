@@ -34,6 +34,7 @@ public class GraphFX<V, E> extends Pane {
             Point pos = layout.getNodeCenter(node);
             n.translateXProperty().set(n.translateXProperty().doubleValue() + shift.x + pos.x);
             n.translateYProperty().set(n.translateYProperty().doubleValue() + shift.y + pos.y);
+            getChildren().add(n);
         }
     }
 }
