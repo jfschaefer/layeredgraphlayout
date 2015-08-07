@@ -84,27 +84,32 @@ public class LGraph<V, E> {
         placed = true;
         boolean somethingHasChanged;
 
+        // top down
+        for (Layer layer : layers) {
+        //for (int i = 1; i < layers.size(); i++) {
+        //    Layer layer = layers.get(i);
+            double nextPos = 0d;
+            for (LNode node : layer.getElements()) {
+                double parentPos;
+                if (node.getParents().isEmpty()) {
+                    parentPos = 0d;
+                } else {
+                    parentPos = 0d;
+                    for (LNode parent : node.getParents()) {    //parent set should be singleton, but just in case
+                        parentPos += parent.getXPos();
+                    }
+                    parentPos /= node.getParents().size();
+                    parentPos -= node.getWidth() * 0.5;
+                }
+                node.setXPosLeft(Math.max(nextPos, Math.max(parentPos, node.getXPosLeft())));
+                nextPos = node.getXPosRight() + config.getGapBetweenNodes();
+            }
+        }
+
+        int maxIterations = 36;
+
         do {
             somethingHasChanged = false;
-            // top down
-            for (Layer layer : layers) {
-                double nextPos = 0d;
-                for (LNode node : layer.getElements()) {
-                    double parentPos;
-                    if (node.getParents().isEmpty()) {
-                        parentPos = 0d;
-                    } else {
-                        parentPos = 0d;
-                        for (LNode parent : node.getParents()) {    //parent set should be singleton, but just in case
-                            parentPos += parent.getXPos();
-                        }
-                        parentPos /= node.getParents().size();
-                        parentPos -= node.getWidth() * 0.5;
-                    }
-                    node.setXPosLeft(Math.max(nextPos, Math.max(parentPos, node.getXPosLeft())));
-                    nextPos = node.getXPosRight() + config.getGapBetweenNodes();
-                }
-            }
 
             // bottom up
             for (int i = layers.size() - 1; i >= 0; i--) {
@@ -129,7 +134,7 @@ public class LGraph<V, E> {
                         LNode prev = layer.getElements().get(k - 1);
                         LNode cur = layer.getElements().get(k);
 
-                        double delta = cur.getXPosLeft() - (prev.getXPosRight() + config.gapBetweenNodes);
+                        double delta = cur.getXPosLeft() - (prev.getXPosRight() + config.getGapBetweenNodes());
                         if (delta < 0) {
                             cur.setXPos(cur.getXPos() - delta);
                         } else {
@@ -144,14 +149,54 @@ public class LGraph<V, E> {
                 for (int j = 1; j < layer.getElements().size(); j++) {
                     LNode prev = layer.getElements().get(j - 1);
                     LNode cur = layer.getElements().get(j);
-                    double delta = cur.getXPosLeft() - (prev.getXPosRight() + config.gapBetweenNodes);
+                    double delta = cur.getXPosLeft() - (prev.getXPosRight() + config.getGapBetweenNodes());
                     if (delta < 0) {
                         somethingHasChanged = true;
                         cur.setXPos(cur.getXPos() - delta);
                     }
                 }
             }
-        } while (somethingHasChanged);
+
+            // different top down
+            for (Layer layer : layers) {
+                for (int j = 0; j < layer.getElements().size(); j++) {
+                    LNode node = layer.getElements().get(j);
+                    double idealPos;
+                    if (node.getChildren().isEmpty()) {
+                        idealPos = node.getXPos();
+                    } else {
+                        idealPos = 0d;
+                        for (LNode child : node.getChildren()) {
+                            idealPos += child.getXPos();
+                        }
+                        idealPos /= node.getChildren().size();
+                    }
+                    double shift = idealPos - node.getXPos();
+                    if (shift < -0.4) {
+                        for (LNode child : node.getChildren()) {
+                            child.setXPos(child.getXPos() - shift);
+                        }
+                    }
+                }
+            }
+
+            // fix nodes too close
+            for (Layer layer : layers) {
+                for (int j = 1; j < layer.getElements().size(); j++) {
+                    LNode prev = layer.getElements().get(j - 1);
+                    LNode cur = layer.getElements().get(j);
+                    double delta = cur.getXPosLeft() - (prev.getXPosRight() + config.getGapBetweenNodes());
+                    if (delta < 0) {
+                        somethingHasChanged = true;
+                        cur.setXPos(cur.getXPos() - delta);
+                    }
+                }
+            }
+        } while (somethingHasChanged && --maxIterations != 0);
+
+        if (maxIterations == 0) {
+            System.err.println("Warning: de.jfschaefer.layeredgraphlayout.lgraph.LGraph.treePlacement: Reached max. iterations");
+        }
     }
 
 

@@ -55,6 +55,30 @@ public class LNode {
         return parents;
     }
 
+    public LNode getLeftMostChild() {
+        LNode leftmost = null;
+        int leftMostPos = Integer.MAX_VALUE;
+        for (LNode child : children) {
+            if (child.getPos() < leftMostPos) {
+                leftmost = child;
+                leftMostPos = child.getPos();
+            }
+        }
+        return leftmost;
+    }
+
+    public LNode getRightMostChild() {
+        LNode rightmost = null;
+        int rightMostPos = Integer.MIN_VALUE;
+        for (LNode child : children) {
+            if (child.getPos() > rightMostPos) {
+                rightmost = child;
+                rightMostPos = child.getPos();
+            }
+        }
+        return rightmost;
+    }
+
     public int getLayer() {
         return layer;
     }
