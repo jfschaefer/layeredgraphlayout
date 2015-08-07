@@ -2,6 +2,7 @@ package de.jfschaefer.layeredgraphlayout.gengraph;
 
 import de.jfschaefer.layeredgraphlayout.Edge;
 import de.jfschaefer.layeredgraphlayout.Node;
+import de.jfschaefer.layeredgraphlayout.pgraph.PGraph;
 
 import java.util.*;
 
@@ -109,5 +110,17 @@ public class GenGraph<V, E> {
 
         locked = true;
         cyclesRemoved = true;
+    }
+
+    public PGraph<V, E> getAsPGraph() {
+        removeCyclesGreedy();
+        PGraph<V, E> result = new PGraph<V, E>();
+        for (Node<V, E> node : getNodes()) {
+            result.addNode(node);
+        }
+        for (Edge<V, E> edge : getEdges()) {
+            result.addEdge(edge);
+        }
+        return result;
     }
 }
