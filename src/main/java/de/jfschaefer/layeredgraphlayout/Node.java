@@ -29,12 +29,14 @@ public class Node<V, E> {
     }
 
     public void reverseIngoingEdge(Edge<V, E> edge) {
-        assert ingoingEdges.remove(edge);
+        assert ingoingEdges.contains(edge);
+        ingoingEdges.remove(edge);
         outgoingEdges.add(edge);
     }
 
     public void reverseOutgoingEdge(Edge<V, E> edge) {
-        assert outgoingEdges.remove(edge);
+        assert outgoingEdges.contains(edge);
+        outgoingEdges.remove(edge);
         ingoingEdges.add(edge);
     }
 
