@@ -112,7 +112,7 @@ public class GenGraph<V, E> {
         cyclesRemoved = true;
     }
 
-    public PGraph<V, E> getAsPGraph() {
+    public PGraph<V, E> generatePGraph() {
         removeCyclesGreedy();
         PGraph<V, E> result = new PGraph<V, E>();
         for (Node<V, E> node : getNodes()) {
