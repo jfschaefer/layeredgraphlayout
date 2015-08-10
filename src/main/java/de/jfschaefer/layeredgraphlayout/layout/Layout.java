@@ -74,7 +74,12 @@ public class Layout<V, E> {
         }
         updateBoundaries(points.get(points.size() - 1));
         if (edge.isFlipped()) {
-            Collections.reverse(segments);
+            // Collections.reverse(segments);
+            ArrayList<EdgeSegment> newSegments = new ArrayList<EdgeSegment>(segments.size());
+            for (int i = segments.size() - 1; i >= 0; i++) {
+                newSegments.add(segments.get(i).reversed());
+            }
+            segments = newSegments;
         }
         edgeMap.put(edge.getOriginalEdge(), new Pair<Edge<V, E>, ArrayList<EdgeSegment>>(edge, segments));
     }
@@ -136,5 +141,9 @@ public class Layout<V, E> {
 
     public final Set<E> getEdgeSet() {
         return edgeMap.keySet();
+    }
+
+    public LayoutConfig getConfig() {
+        return config;
     }
 }

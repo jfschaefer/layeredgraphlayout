@@ -6,6 +6,7 @@ package de.jfschaefer.layeredgraphlayout.layout;
 
 public class LayoutConfig {
     protected boolean bezier = true;
+    protected boolean arrowheads = true;
     protected double controlPointDistance = 0.5d;
     protected double graphPadding = 16d;
 
@@ -15,6 +16,14 @@ public class LayoutConfig {
 
     public boolean getBezier() {
         return bezier;
+    }
+
+    public void setArrowheads(boolean arrowheads) {
+        this.arrowheads = arrowheads;
+    }
+
+    public boolean getArrowheads() {
+        return arrowheads;
     }
 
     public void setControlPointDistance(double value) {

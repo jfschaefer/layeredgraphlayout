@@ -9,7 +9,7 @@ public class EdgeSegment {
     public final Point control1;
     public final Point control2;
     public final Point end;
-    public final boolean bezier;   //true, if cubic bezier curve, false, if linear
+    public final boolean bezier;   //true if cubic bezier curve, false if linear
 
     public EdgeSegment(Point start, Point end) {
         this.start = start;
@@ -53,6 +53,14 @@ public class EdgeSegment {
 
     public Point getEnd() {
         return end;
+    }
+
+    public EdgeSegment reversed() {
+        if (bezier) {
+            return new EdgeSegment(end, control2, control1, start);
+        } else {
+            return new EdgeSegment(end, start);
+        }
     }
 
     public Point getAt(double fraction) {
