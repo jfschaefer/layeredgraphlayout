@@ -51,6 +51,8 @@ public class PGraph<V, E> {
     public void lock() {
         if (locked) return;
         locked = true;
+        nodesWithSeveralChildren = new ArrayList<PNode<V, E>>();
+        nodesWithSeveralParents = new ArrayList<PNode<V, E>>();
         for (PNode<V, E> pnode : nodes) {
             if (pnode.isSource()) {
                 PEdge<V, E> fakeEdge = new PEdge<V, E>(root, pnode);
@@ -83,11 +85,13 @@ public class PGraph<V, E> {
 
     protected void populateLGraph(LGraph<V, E> lgraph, PNode<V, E> node) {
         for (PEdge<V, E> edge : node.getChildren()) {
-            lgraph.addNode(edge.to.node, edge.to.getLayer());
+            if (!lgraph.containsNode(edge.to.node)) {
+                lgraph.addNode(edge.to.node, edge.to.getLayer());
+                populateLGraph(lgraph, edge.to);
+            }
             if (!edge.isFake) {
                 lgraph.addEdge(edge.edge);
             }
-            populateLGraph(lgraph, edge.to);
         }
     }
 

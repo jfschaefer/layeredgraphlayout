@@ -44,6 +44,10 @@ public class LGraph<V, E> {
         nodeMap.put(node, n);
     }
 
+    public boolean containsNode(Node<V, E> node) {
+        return nodeMap.containsKey(node);
+    }
+
     public void addEdge(Edge<V, E> edge) {
         assert !placed;
         LNode from = nodeMap.get(edge.getFrom());
