@@ -76,7 +76,7 @@ public class Layout<V, E> {
         if (edge.isFlipped()) {
             // Collections.reverse(segments);
             ArrayList<EdgeSegment> newSegments = new ArrayList<EdgeSegment>(segments.size());
-            for (int i = segments.size() - 1; i >= 0; i++) {
+            for (int i = segments.size() - 1; i >= 0; i--) {
                 newSegments.add(segments.get(i).reversed());
             }
             segments = newSegments;
