@@ -16,9 +16,9 @@ public class LatexGenerator<V, E> {
     }
 
 
-    public /* static */ String generateLatex(Layout<V, E> layout, Map<V, String> nodeMap, Map<E, String> edgeMap) {
+    public static <V, E> String generateLatex(Layout<V, E> layout, Map<V, String> nodeMap, Map<E, String> edgeMap) {
         StringBuilder sb = new StringBuilder();
-        sb.append("\\nbegin{tikzpicture}\n");
+        sb.append("\\begin{tikzpicture}\n");
         de.jfschaefer.layeredgraphlayout.layout.Vector shift = layout.getShift();
 
         // Step 1: Draw nodes
@@ -28,13 +28,13 @@ public class LatexGenerator<V, E> {
             Point pos = layout.getNodeCenter(node);
             sb.append(pos.x + shift.x);
             sb.append("pt, ");
-            sb.append(layout.getHeight() - pos.y - shift.x);
+            sb.append(layout.getHeight() - pos.y - shift.y);
             sb.append("pt) [draw, minimum width=");
             sb.append(size.first);
             sb.append("pt, minimum height=");
             sb.append(size.second);
-            sb.append(latexEscape(nodeMap.get(node)));
             sb.append("pt] {");
+            sb.append(latexEscape(nodeMap.get(node)));
             sb.append("};\n");
         }
 
@@ -62,7 +62,7 @@ public class LatexGenerator<V, E> {
                     sb.append(layout.getHeight() - segment.control1.y - shift.y);
                     sb.append("pt) and (");
                     sb.append(segment.control2.x + shift.x);
-                    sb.append("pt) and (");
+                    sb.append("pt, ");
                     sb.append(layout.getHeight() - segment.control2.y - shift.y);
                     sb.append("pt) .. ");
                 } else {
