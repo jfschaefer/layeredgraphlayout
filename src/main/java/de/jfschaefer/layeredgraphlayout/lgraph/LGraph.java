@@ -23,6 +23,8 @@ public class LGraph<V, E> {
 
     protected boolean placed;
 
+    protected final double EPSILON = 1e-5;   //that's more than sufficient
+
     public LGraph(LGraphConfig config) {
         numberOfLayers = 0;
         layers = new ArrayList<Layer>();
@@ -90,8 +92,6 @@ public class LGraph<V, E> {
 
         // top down
         for (Layer layer : layers) {
-        //for (int i = 1; i < layers.size(); i++) {
-        //    Layer layer = layers.get(i);
             double nextPos = 0d;
             for (LNode node : layer.getElements()) {
                 double parentPos;
@@ -118,7 +118,6 @@ public class LGraph<V, E> {
             // bottom up
             for (int i = layers.size() - 1; i >= 0; i--) {
                 Layer layer = layers.get(i);
-                // for (LNode node : layer.getElements()) {
                 for (int j = 0; j < layer.getElements().size(); j++) {
                     LNode node = layer.getElements().get(j);
                     double newPos;
@@ -148,7 +147,7 @@ public class LGraph<V, E> {
                 }
             }
 
-            // fix nodes too close
+            /* // fix nodes too close   -   apparently, never needed
             for (Layer layer : layers) {
                 for (int j = 1; j < layer.getElements().size(); j++) {
                     LNode prev = layer.getElements().get(j - 1);
@@ -159,7 +158,7 @@ public class LGraph<V, E> {
                         cur.setXPos(cur.getXPos() - delta);
                     }
                 }
-            }
+            } */
 
             // different top down
             for (Layer layer : layers) {
@@ -190,7 +189,7 @@ public class LGraph<V, E> {
                     LNode prev = layer.getElements().get(j - 1);
                     LNode cur = layer.getElements().get(j);
                     double delta = cur.getXPosLeft() - (prev.getXPosRight() + config.getGapBetweenNodes());
-                    if (delta < 0) {
+                    if (delta < -EPSILON) {
                         somethingHasChanged = true;
                         cur.setXPos(cur.getXPos() - delta);
                     }
@@ -218,7 +217,6 @@ public class LGraph<V, E> {
 
         for (Map.Entry<Edge<V, E>, ArrayList<LNode>> entry : edgeMap.entrySet()) {
             ArrayList<Point> points = new ArrayList<Point>();
-            //for (LNode lnode : entry.getValue()) {
             for (int i = 0; i < entry.getValue().size(); i++) {
                 LNode lnode = entry.getValue().get(i);
                 points.add(new Point(lnode.getXPos(), lnode.getLayer() * config.getLayerDistance() +
