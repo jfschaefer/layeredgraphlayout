@@ -16,4 +16,8 @@ public class Vector {
     public Vector scaled(double l) {
         return new Vector(l * x, l * y);
     }
+
+    public Vector add(Vector other) {
+        return new Vector(this.x + other.x, this.y + other.y);
+    }
 }
