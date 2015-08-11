@@ -80,14 +80,13 @@ public class EdgeSegment {
 
     public Vector getDerivativeAt(double fraction) {
         if (bezier) {
-            Vector p0 = Point.ORIGIN.vectorTo(start);
-            Vector p1 = Point.ORIGIN.vectorTo(control1);
-            Vector p2 = Point.ORIGIN.vectorTo(control2);
-            Vector p3 = Point.ORIGIN.vectorTo(end);
+            Vector a = start.vectorTo(control1);
+            Vector b = control1.vectorTo(control2);
+            Vector c = control2.vectorTo(end);
 
-            //return start.vectorTo(control1).scaled
-            //TODO: Use actual derivative
-            return start.vectorTo(end);
+            return a.scaled(3*(1-fraction)*(1-fraction))
+                        .add(b.scaled(6*(1-fraction)*fraction))
+                        .add(c.scaled(3*fraction*fraction));
         } else {
             return start.vectorTo(end);
         }
