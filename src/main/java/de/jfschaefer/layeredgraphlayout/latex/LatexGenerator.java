@@ -74,6 +74,22 @@ public class LatexGenerator<V, E> {
                 sb.append(layout.getHeight() - segment.end.y - shift.y);
                 sb.append("pt);\n");
             }
+
+            String labelString = edgeMap.get(edge);
+            if (labelString != null && !labelString.isEmpty()) {
+                final Pair<Point, Double> edgePosition = Util.naiveGetLabelPosition(segments);
+                final Point position = edgePosition.first;
+                final double angle = edgePosition.second;
+                sb.append("\\node[rotate=");
+                sb.append(-angle);
+                sb.append(", align=left] at (");
+                sb.append(position.x + shift.x);
+                sb.append("pt, ");
+                sb.append(layout.getHeight() - position.y - shift.y);
+                sb.append("pt) {");
+                sb.append(latexEscape(labelString));
+                sb.append("\\\\};\n");
+            }
         }
 
         sb.append("\\end{tikzpicture}\n");
