@@ -35,11 +35,15 @@ public class PNode<V, E> {
 
     public void removeChild(PEdge<V, E> child) {
         assert child.isFake;
+        assert child.from == this;
+        assert children.contains(child);
         children.remove(child);
     }
 
     public void removeParent(PEdge<V, E> parent) {
         assert parent.isFake;
+        assert parent.to == this;
+        assert parents.contains(parent);
         parents.remove(parent);
     }
 
