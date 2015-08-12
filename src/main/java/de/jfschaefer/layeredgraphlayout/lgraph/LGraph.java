@@ -59,12 +59,13 @@ public class LGraph<V, E> {
 
     public int getNumberOfIntersections() {
         int intersections = 0;
-        for (int i = 0; i < layers.size() - 1; i++) {
+        for (int i = 0; i < layers.size(); i++) {
             Layer layer = layers.get(i);
             ArrayList<Pair<LNode, LNode>> connections = layer.getChildConnections();
-            for (Pair<LNode, LNode> a : connections) {
-                for (Pair<LNode, LNode> b : connections) {
-                    if (a == b) continue;
+            for (int k = 0; k < connections.size(); k++) {
+                for (int l = k + 1; l < connections.size(); l++) {
+                    Pair<LNode, LNode> a = connections.get(k);
+                    Pair<LNode, LNode> b = connections.get(l);
                     if (a.first.getPos() < b.first.getPos() && a.second.getPos() > b.second.getPos()) intersections++;
                     else if (a.first.getPos() > b.first.getPos() && a.second.getPos() < b.second.getPos()) intersections++;
                 }
