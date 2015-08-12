@@ -4,6 +4,7 @@ import de.jfschaefer.layeredgraphlayout.*;
 import de.jfschaefer.layeredgraphlayout.lgraph.LGraph;
 import de.jfschaefer.layeredgraphlayout.lgraph.LGraphConfig;
 
+import java.lang.reflect.Array;
 import java.util.*;
 
 /**
@@ -25,8 +26,9 @@ public class PGraph<V, E> {
     protected ArrayList<PNode<V, E>> nodesWithSeveralChildrenScaled;  //nodes with very many children are contained multiple times
     protected ArrayList<PNode<V, E>> nodesWithoutChildren;
 
-    // excluding the ones from the root
+    // excluding the ones from the root and the ones attaching sources somewhere
     protected ArrayList<PEdge<V, E>> fakeEdges;
+    protected ArrayList<PEdge<V, E>> sourceFakeEdges;
 
     public static final LGraphConfig defaultLGraphConfig = new LGraphConfig();
     public static final Random random = new Random();
@@ -65,11 +67,13 @@ public class PGraph<V, E> {
         nodesWithSeveralChildrenScaled = new ArrayList<PNode<V, E>>();
         nodesWithSeveralParents = new ArrayList<PNode<V, E>>();
         nodesWithoutChildren = new ArrayList<PNode<V, E>>();
+        sourceFakeEdges = new ArrayList<PEdge<V, E>>();
         for (PNode<V, E> pnode : nodes) {
             if (pnode.isSource()) {
                 PEdge<V, E> fakeEdge = new PEdge<V, E>(root, pnode);
                 pnode.addParent(fakeEdge);
                 root.addChild(fakeEdge);
+                sourceFakeEdges.add(fakeEdge);
             }
             if (pnode.getChildren().size() >= 2) {
                 nodesWithSeveralChildren.add(pnode);
@@ -159,12 +163,14 @@ public class PGraph<V, E> {
             SIMULATED ANNEALING
      */
 
-    public void runSimulatedAnnealing() {
+    public double runSimulatedAnnealing() {
         if (!locked) lock();
         double temp = 10;
         double coolingFactor = 0.991;
         double currentEnergy = getEnergy();
-        while (temp > 0.1) {
+        if (nodes.isEmpty()) return currentEnergy;
+
+        while (temp > 0.05) {
             double action = random.nextDouble();
             if (action < 0.11) {          // add fake edge
                 currentEnergy = tryAddFakeEdge(temp, currentEnergy);
@@ -172,19 +178,60 @@ public class PGraph<V, E> {
                 currentEnergy = tryRemoveFakeEdge(temp, currentEnergy);
             } else if (action < 0.75) {    // swap two children of some node
                 currentEnergy = trySwapChildren(temp, currentEnergy);
-            } else if (action < 0.86) {    // tear one of the sources off the root
-
-            } else {                       // attach one of the sources back to the root
-
+            } else {                       // change where one of the sources is attached to
+                currentEnergy = tryChangeSource(temp, currentEnergy);
             }
             temp *= coolingFactor;
         }
+        return currentEnergy;
     }
 
     public double getEnergy() {
         LGraph<V, E> lgraph = generateLGraphEfficiently(defaultLGraphConfig);
         double energy = lgraph.getNumberOfIntersections();
+        energy += 1 - Math.exp(-Math.sqrt(lgraph.getNumberOfDummyNodes()));  // removing intersections has strict priority
         return energy;
+    }
+
+    public double tryChangeSource(double temp, double currentEnergy) {
+        PEdge<V, E> fakeEdge = sourceFakeEdges.get(random.nextInt(sourceFakeEdges.size()));
+        PNode<V, E> child = fakeEdge.to;
+        child.removeParent(fakeEdge);
+        fakeEdge.from.removeChild(fakeEdge);
+        PEdge<V, E> fakeEdge2;
+
+        if (fakeEdge.from.isRoot) {  // try attaching it somewhere else
+            PNode<V, E> parent;
+            if (Math.random() < 0.5 || nodesWithSeveralChildrenScaled.size() == 0) {      // try some completely random node
+                parent = nodes.get(random.nextInt(nodes.size()));
+            } else {
+                parent = nodesWithSeveralChildrenScaled.get(random.nextInt(nodesWithSeveralChildrenScaled.size()));
+            }
+            fakeEdge2 = new PEdge<V, E>(parent, child);
+            parent.addChild(fakeEdge2);
+            if (parent.getChildren().size() > 1) {
+                parent.swapChildren(parent.getChildren().size() - 1, random.nextInt(parent.getChildren().size()-1));
+            }
+            child.addParent(fakeEdge2);
+        } else {    // try attaching it back to root.
+            fakeEdge2 = new PEdge<V,E>(root, child);
+            root.addChild(fakeEdge2);
+            child.addParent(fakeEdge2);
+        }
+        if (!graphHasCycle(fakeEdge2.to)) {
+            double newEnergy = getEnergy();
+            if (acceptChange(currentEnergy, newEnergy, temp)) {
+                sourceFakeEdges.remove(fakeEdge);
+                sourceFakeEdges.add(fakeEdge2);
+                return newEnergy;
+            }
+        }
+
+        fakeEdge2.from.removeChild(fakeEdge2);
+        child.removeParent(fakeEdge2);
+        fakeEdge.from.addChild(fakeEdge);
+        child.addParent(fakeEdge);
+        return currentEnergy;
     }
 
     public double trySwapChildren(double temp, double currentEnergy) {
@@ -224,7 +271,7 @@ public class PGraph<V, E> {
             }
             // otherwise undo changes
             from.removeChild(fakeEdge);
-            to.removeChild(fakeEdge);
+            to.removeParent(fakeEdge);
             return currentEnergy;
         }
         return currentEnergy;
@@ -253,16 +300,30 @@ public class PGraph<V, E> {
 
     public double tryRemoveFakeEdge(double temp, double currentEnergy) {
         if (fakeEdges.size() > 0) {
-            PEdge<V, E> fakeEdge = fakeEdges.get(random.nextInt(fakeEdges.size()));
-            fakeEdge.from.removeChild(fakeEdge);
-            fakeEdge.to.removeParent(fakeEdge);
+            PEdge<V, E> choice = fakeEdges.get(random.nextInt(fakeEdges.size()));
+            ArrayList<PEdge<V, E>> toBeRemoved = new ArrayList<PEdge<V, E>>();
+            if (Math.random() < 0.5) {    //remove single edge
+                toBeRemoved.add(choice);
+            } else {
+                for (PEdge<V, E> parent : choice.to.getParents()) {
+                    if (parent.isFake && !parent.from.isRoot) {
+                        toBeRemoved.add(parent);
+                    }
+                }
+            }
+            for (PEdge<V, E> fakeEdge : toBeRemoved) {
+                fakeEdge.from.removeChild(fakeEdge);
+                fakeEdge.to.removeParent(fakeEdge);
+            }
             double newEnergy = getEnergy();
             if (acceptChange(currentEnergy, newEnergy, temp)) {
-                fakeEdges.remove(fakeEdge);
+                fakeEdges.removeAll(toBeRemoved);
                 return newEnergy;
             } else {
-                fakeEdge.from.addChild(fakeEdge);
-                fakeEdge.to.addParent(fakeEdge);
+                for (PEdge<V, E> fakeEdge : toBeRemoved) {
+                    fakeEdge.from.addChild(fakeEdge);
+                    fakeEdge.to.addParent(fakeEdge);
+                }
                 return currentEnergy;
             }
         }

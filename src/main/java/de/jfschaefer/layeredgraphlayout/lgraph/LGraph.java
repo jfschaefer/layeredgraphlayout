@@ -23,6 +23,7 @@ public class LGraph<V, E> {
     protected LGraphConfig config;
 
     protected boolean placed;
+    protected int numberOfDummyNodes;
 
     protected final double EPSILON = 1e-5;   //that's more than sufficient
 
@@ -33,6 +34,11 @@ public class LGraph<V, E> {
         edgeMap = new HashMap<Edge<V, E>, ArrayList<LNode>>();
         this.config = config;
         placed = false;
+        numberOfDummyNodes = 0;
+    }
+
+    public int getNumberOfDummyNodes() {
+        return numberOfDummyNodes;
     }
 
     public void addNode(Node<V, E> node, int layer) {
@@ -84,6 +90,7 @@ public class LGraph<V, E> {
             layers.get(layer).addNode(newNode);
             nodes.add(newNode);
             layer ++;
+            numberOfDummyNodes++;
 
             oldNode.addChild(newNode);
             newNode.addParent(oldNode);
@@ -224,23 +231,81 @@ public class LGraph<V, E> {
         // TODO: This is just short dummy algorithm - implement something reasonable instead
         placed = true;
 
-        // top down
+        // top down (places the nodes in a valid way, large gaps)
         for (Layer layer : layers) {
             double nextPos = 0d;
             for (LNode node : layer.getElements()) {
-                double parentPos;
-                if (node.getParents().isEmpty()) {
-                    parentPos = 0d;
-                } else {
-                    parentPos = 0d;
+                node.setXPosLeft(nextPos);
+                nextPos = node.getXPosRight() + config.getGapBetweenNodes() + 0 * node.getWidth();
+            }
+        }
+
+        for (int repeat = 3; --repeat > 0; ) {
+            // top down (places according to average of parents and children, left->right)
+            for (Layer layer : layers) {
+                for (int i = 0; i < layer.getElements().size(); i++) {
+                    LNode node = layer.getElements().get(i);
+                    double perfectPos = 0d;
                     for (LNode parent : node.getParents()) {
-                        parentPos += parent.getXPos();
+                        perfectPos += parent.getXPos();
                     }
-                    parentPos /= node.getParents().size();
-                    parentPos -= node.getWidth() * 0.5;
+                    for (LNode parent : node.getChildren()) {
+                        perfectPos += parent.getXPos();
+                    }
+                    int n = node.getParents().size() + node.getChildren().size();
+                    if (n != 0) {
+                        perfectPos /= n;
+                    }
+                    if (perfectPos > node.getXPos()) {
+                        if (i + 1 < layer.getElements().size()) {
+                            LNode next = layer.getElements().get(i+1);
+                            node.setXPos(Math.min(perfectPos, next.getXPosLeft() - config.getGapBetweenNodes() - 0.5 * node.getWidth()));
+                        } else {
+                            node.setXPos(perfectPos);
+                        }
+                    } else {
+                        if (i > 0) {
+                            LNode prev = layer.getElements().get(i-1);
+                            node.setXPos(Math.max(perfectPos, prev.getXPosRight() + config.getGapBetweenNodes() + 0.5 * node.getWidth()));
+                        } else {
+                            node.setXPos(perfectPos);
+                        }
+                    }
                 }
-                node.setXPosLeft(Math.max(nextPos, Math.max(parentPos, node.getXPosLeft())));
-                nextPos = node.getXPosRight() + config.getGapBetweenNodes();
+            }
+
+            // top down (places according to average of parents and children, right->left)
+            for (Layer layer : layers) {
+                //for (int i = 0; i < layer.getElements().size(); i++) {
+                for (int i = layer.getElements().size() - 1; i >= 0; i--) {
+                    LNode node = layer.getElements().get(i);
+                    double perfectPos = 0d;
+                    for (LNode parent : node.getParents()) {
+                        perfectPos += parent.getXPos();
+                    }
+                    for (LNode parent : node.getChildren()) {
+                        perfectPos += parent.getXPos();
+                    }
+                    int n = node.getParents().size() + node.getChildren().size();
+                    if (n != 0) {
+                        perfectPos /= n;
+                    }
+                    if (perfectPos > node.getXPos()) {
+                        if (i + 1 < layer.getElements().size()) {
+                            LNode next = layer.getElements().get(i+1);
+                            node.setXPos(Math.min(perfectPos, next.getXPosLeft() - config.getGapBetweenNodes() - 0.5 * node.getWidth()));
+                        } else {
+                            node.setXPos(perfectPos);
+                        }
+                    } else {
+                        if (i > 0) {
+                            LNode prev = layer.getElements().get(i-1);
+                            node.setXPos(Math.max(perfectPos, prev.getXPosRight() + config.getGapBetweenNodes() + 0.5 * node.getWidth()));
+                        } else {
+                            node.setXPos(perfectPos);
+                        }
+                    }
+                }
             }
         }
     }
@@ -270,4 +335,5 @@ public class LGraph<V, E> {
 
         return layout;
     }
+
 }
