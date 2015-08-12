@@ -163,42 +163,66 @@ public class PGraph<V, E> {
             SIMULATED ANNEALING
      */
 
-    public double runSimulatedAnnealing() {
+    public double runSimulatedAnnealing(int iterations) {
         if (!locked) lock();
-        double temp = 10;
-        double coolingFactor = 0.991;
+        double temp = 1;
+        double coolingFactor = Math.pow(0.001, 1d / iterations);
         double currentEnergy = getEnergy();
         if (nodes.isEmpty()) return currentEnergy;
+        Collections.shuffle(nodesWithSeveralChildrenScaled, random);
+        Collections.shuffle(sourceFakeEdges, random);
 
-        while (temp > 0.05) {
+        while (temp > 0.001) {
             double action = random.nextDouble();
-            if (action < 0.11) {          // add fake edge
+            if (action < 0.18) {          // add fake edge
                 currentEnergy = tryAddFakeEdge(temp, currentEnergy);
-            } else if (action < 0.24) {    // remove fake edge (slightly higher probability - we don't want too many fake edges)
+                if (currentEnergy != getEnergy()) {
+                    System.out.println("A");
+                }
+            } else if (action < 0.41) {    // remove fake edge (slightly higher probability - we don't want too many fake edges)
                 currentEnergy = tryRemoveFakeEdge(temp, currentEnergy);
+                if (currentEnergy != getEnergy()) {
+                    System.out.println("B");
+                }
             } else if (action < 0.75) {    // swap two children of some node
                 currentEnergy = trySwapChildren(temp, currentEnergy);
+                if (currentEnergy != getEnergy()) {
+                    System.out.println("C");
+                }
             } else {                       // change where one of the sources is attached to
                 currentEnergy = tryChangeSource(temp, currentEnergy);
+                if (currentEnergy != getEnergy()) {
+                    System.err.println("D");
+                    break;
+                }
             }
             temp *= coolingFactor;
         }
         return currentEnergy;
     }
 
+    public static int quadraticRandint(int limit) {
+        //return (int)(random.nextDouble() * limit);
+        return (int)(random.nextDouble() * random.nextDouble() * limit);
+        //return 0;
+    }
+
     public double getEnergy() {
         LGraph<V, E> lgraph = generateLGraphEfficiently(defaultLGraphConfig);
         double energy = lgraph.getNumberOfIntersections();
-        energy += 1 - Math.exp(-Math.sqrt(lgraph.getNumberOfDummyNodes()));  // removing intersections has strict priority
+        //energy += 1 - Math.exp(-Math.sqrt(lgraph.getNumberOfDummyNodes()));  // removing intersections has strict priority
         return energy;
     }
 
     public double tryChangeSource(double temp, double currentEnergy) {
         PEdge<V, E> fakeEdge = sourceFakeEdges.get(random.nextInt(sourceFakeEdges.size()));
         PNode<V, E> child = fakeEdge.to;
+        int oldIndex = fakeEdge.from.getChildren().indexOf(fakeEdge);
         child.removeParent(fakeEdge);
         fakeEdge.from.removeChild(fakeEdge);
         PEdge<V, E> fakeEdge2;
+
+        int fakeEdge2Swap = -1;
 
         if (fakeEdge.from.isRoot) {  // try attaching it somewhere else
             PNode<V, E> parent;
@@ -210,7 +234,8 @@ public class PGraph<V, E> {
             fakeEdge2 = new PEdge<V, E>(parent, child);
             parent.addChild(fakeEdge2);
             if (parent.getChildren().size() > 1) {
-                parent.swapChildren(parent.getChildren().size() - 1, random.nextInt(parent.getChildren().size()-1));
+                fakeEdge2Swap = random.nextInt(parent.getChildren().size()-1);
+                parent.swapChildren(parent.getChildren().size() - 1, fakeEdge2Swap);
             }
             child.addParent(fakeEdge2);
         } else {    // try attaching it back to root.
@@ -227,16 +252,25 @@ public class PGraph<V, E> {
             }
         }
 
+
         fakeEdge2.from.removeChild(fakeEdge2);
         child.removeParent(fakeEdge2);
-        fakeEdge.from.addChild(fakeEdge);
+        //fakeEdge.from.addChild(fakeEdge);
+        fakeEdge.from.getChildren().add(oldIndex, fakeEdge);
         child.addParent(fakeEdge);
+        if (fakeEdge2Swap != -1) {
+            PEdge<V, E> e = fakeEdge2.from.getChildren().get(fakeEdge2.from.getChildren().size()-1);
+            fakeEdge2.from.getChildren().remove(fakeEdge2.from.getChildren().size()-1);
+            fakeEdge2.from.getChildren().add(fakeEdge2Swap, e);
+        }
         return currentEnergy;
     }
 
     public double trySwapChildren(double temp, double currentEnergy) {
         if (nodesWithSeveralChildrenScaled.size() > 0) {
-            PNode<V, E> parent = nodesWithSeveralChildrenScaled.get(random.nextInt(nodesWithSeveralChildrenScaled.size()));
+            PNode<V, E> parent = nodesWithSeveralChildrenScaled.get(quadraticRandint(nodesWithSeveralChildrenScaled.size()));
+            nodesWithSeveralChildrenScaled.remove(parent);
+            nodesWithSeveralChildrenScaled.add(parent);   // move it to the end - less likely to be picked again in near future
             int numberOfChildren = parent.getChildren().size();
             int i1 = random.nextInt(numberOfChildren);
             int i2 = random.nextInt(numberOfChildren - 1);
