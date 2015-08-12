@@ -33,6 +33,16 @@ public class PNode<V, E> {
         children.add(child);
     }
 
+    public void removeChild(PEdge<V, E> child) {
+        assert child.isFake;
+        children.remove(child);
+    }
+
+    public void removeParent(PEdge<V, E> parent) {
+        assert parent.isFake;
+        parents.remove(parent);
+    }
+
     public void addParent(PEdge<V, E> parent) {
         parents.add(parent);
     }
@@ -67,6 +77,17 @@ public class PNode<V, E> {
 
     public int getLayer() {
         return layer;
+    }
+
+    public void swapChildren(int i1, int i2) {
+        assert i1 != i2;
+        PEdge<V, E> child1 = children.get(i1);
+        PEdge<V, E> child2 = children.get(i2);
+        int i2adapted = i2 > i1 ? i2 - 1 : i2;
+        children.remove(i1);
+        children.remove(i2adapted);
+        children.add(i2adapted, child1);
+        children.add(i1, child2);
     }
 }
 

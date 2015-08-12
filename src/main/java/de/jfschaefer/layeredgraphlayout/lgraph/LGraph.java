@@ -5,6 +5,7 @@ import de.jfschaefer.layeredgraphlayout.Edge;
 import de.jfschaefer.layeredgraphlayout.layout.Layout;
 import de.jfschaefer.layeredgraphlayout.layout.LayoutConfig;
 import de.jfschaefer.layeredgraphlayout.layout.Point;
+import de.jfschaefer.layeredgraphlayout.util.Pair;
 
 import java.util.*;
 
@@ -48,6 +49,22 @@ public class LGraph<V, E> {
 
     public boolean containsNode(Node<V, E> node) {
         return nodeMap.containsKey(node);
+    }
+
+    public int getNumberOfIntersections() {
+        int intersections = 0;
+        for (int i = 0; i < layers.size() - 1; i++) {
+            Layer layer = layers.get(i);
+            ArrayList<Pair<LNode, LNode>> connections = layer.getChildConnections();
+            for (Pair<LNode, LNode> a : connections) {
+                for (Pair<LNode, LNode> b : connections) {
+                    if (a == b) continue;
+                    if (a.first.getPos() < b.first.getPos() && a.second.getPos() > b.second.getPos()) intersections++;
+                    else if (a.first.getPos() > b.first.getPos() && a.second.getPos() < b.second.getPos()) intersections++;
+                }
+            }
+        }
+        return intersections;
     }
 
     public void addEdge(Edge<V, E> edge) {
@@ -199,6 +216,32 @@ public class LGraph<V, E> {
 
         if (maxIterations == 0) {
             System.err.println("Warning: de.jfschaefer.layeredgraphlayout.lgraph.LGraph.treePlacement: Reached max. iterations");
+        }
+    }
+
+
+    public void graphPlacement() {
+        // TODO: This is just short dummy algorithm - implement something reasonable instead
+        placed = true;
+
+        // top down
+        for (Layer layer : layers) {
+            double nextPos = 0d;
+            for (LNode node : layer.getElements()) {
+                double parentPos;
+                if (node.getParents().isEmpty()) {
+                    parentPos = 0d;
+                } else {
+                    parentPos = 0d;
+                    for (LNode parent : node.getParents()) {
+                        parentPos += parent.getXPos();
+                    }
+                    parentPos /= node.getParents().size();
+                    parentPos -= node.getWidth() * 0.5;
+                }
+                node.setXPosLeft(Math.max(nextPos, Math.max(parentPos, node.getXPosLeft())));
+                nextPos = node.getXPosRight() + config.getGapBetweenNodes();
+            }
         }
     }
 

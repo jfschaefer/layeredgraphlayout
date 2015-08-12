@@ -19,8 +19,17 @@ public class PGraph<V, E> {
 
     protected PNode<V, E> root;
 
+    // these lists ignore fake edges and shall not change after the graph is locked
     protected ArrayList<PNode<V, E>> nodesWithSeveralParents;
     protected ArrayList<PNode<V, E>> nodesWithSeveralChildren;
+    protected ArrayList<PNode<V, E>> nodesWithSeveralChildrenScaled;  //nodes with very many children are contained multiple times
+    protected ArrayList<PNode<V, E>> nodesWithoutChildren;
+
+    // excluding the ones from the root
+    protected ArrayList<PEdge<V, E>> fakeEdges;
+
+    public static final LGraphConfig defaultLGraphConfig = new LGraphConfig();
+    public static final Random random = new Random();
 
     public PGraph() {
         nodeMap = new HashMap<Node<V, E>, PNode<V, E>>();
@@ -28,6 +37,7 @@ public class PGraph<V, E> {
         edges = new ArrayList<PEdge<V, E>>();
         locked = false;
         root = new PNode<V, E>(null, true);
+        fakeEdges = new ArrayList<PEdge<V, E>>();
     }
 
     public void addNode(Node<V, E> node) {
@@ -52,7 +62,9 @@ public class PGraph<V, E> {
         if (locked) return;
         locked = true;
         nodesWithSeveralChildren = new ArrayList<PNode<V, E>>();
+        nodesWithSeveralChildrenScaled = new ArrayList<PNode<V, E>>();
         nodesWithSeveralParents = new ArrayList<PNode<V, E>>();
+        nodesWithoutChildren = new ArrayList<PNode<V, E>>();
         for (PNode<V, E> pnode : nodes) {
             if (pnode.isSource()) {
                 PEdge<V, E> fakeEdge = new PEdge<V, E>(root, pnode);
@@ -61,9 +73,16 @@ public class PGraph<V, E> {
             }
             if (pnode.getChildren().size() >= 2) {
                 nodesWithSeveralChildren.add(pnode);
+                int i = pnode.getChildren().size();
+                while (--i > 0) {
+                    nodesWithSeveralChildrenScaled.add(pnode);
+                }
             }
             if (pnode.getParents().size() >= 2) {
                 nodesWithSeveralParents.add(pnode);
+            }
+            if (pnode.getChildren().size() == 0) {
+                nodesWithoutChildren.add(pnode);
             }
         }
     }
@@ -74,6 +93,25 @@ public class PGraph<V, E> {
 
         resetLayers();
         setLayers();
+
+        for (PEdge<V, E> edge : root.getChildren()) {
+            lgraph.addNode(edge.to.node, edge.to.getLayer());
+            populateLGraph(lgraph, edge.to);
+        }
+
+        return lgraph;
+    }
+
+    /* The difference to generateLGraph is that it tries to be really efficient, not visually appealing,
+       by pulling nodes down etc. It's just supposed to be used for assessments, e.g. for the simulated annealing.
+     */
+    public LGraph<V, E> generateLGraphEfficiently(LGraphConfig lconfig) {
+        if (!locked) lock();
+        LGraph<V, E> lgraph = new LGraph<V, E>(lconfig);
+        resetLayers();
+        for (PEdge<V, E> edge : root.getChildren()) {
+            setLayersDFS(edge.to, 0);
+        }
 
         for (PEdge<V, E> edge : root.getChildren()) {
             lgraph.addNode(edge.to.node, edge.to.getLayer());
@@ -114,6 +152,127 @@ public class PGraph<V, E> {
         for (PNode<V, E> pnode : nodes) {
             pnode.resetLayer();
         }
+    }
+
+
+    /*
+            SIMULATED ANNEALING
+     */
+
+    public void runSimulatedAnnealing() {
+        if (!locked) lock();
+        double temp = 10;
+        double coolingFactor = 0.991;
+        double currentEnergy = getEnergy();
+        while (temp > 0.1) {
+            double action = random.nextDouble();
+            if (action < 0.11) {          // add fake edge
+                currentEnergy = tryAddFakeEdge(temp, currentEnergy);
+            } else if (action < 0.24) {    // remove fake edge (slightly higher probability - we don't want too many fake edges)
+                currentEnergy = tryRemoveFakeEdge(temp, currentEnergy);
+            } else if (action < 0.75) {    // swap two children of some node
+                currentEnergy = trySwapChildren(temp, currentEnergy);
+            } else if (action < 0.86) {    // tear one of the sources off the root
+
+            } else {                       // attach one of the sources back to the root
+
+            }
+            temp *= coolingFactor;
+        }
+    }
+
+    public double getEnergy() {
+        LGraph<V, E> lgraph = generateLGraphEfficiently(defaultLGraphConfig);
+        double energy = lgraph.getNumberOfIntersections();
+        return energy;
+    }
+
+    public double trySwapChildren(double temp, double currentEnergy) {
+        if (nodesWithSeveralChildrenScaled.size() > 0) {
+            PNode<V, E> parent = nodesWithSeveralChildrenScaled.get(random.nextInt(nodesWithSeveralChildrenScaled.size()));
+            int numberOfChildren = parent.getChildren().size();
+            int i1 = random.nextInt(numberOfChildren);
+            int i2 = random.nextInt(numberOfChildren - 1);
+            i2 = i2 >= i1 ? i2 + 1 : i2;
+            parent.swapChildren(i1, i2);
+            double newEnergy = getEnergy();
+            if (acceptChange(currentEnergy, newEnergy, temp)) {
+                return newEnergy;
+            } else {
+                parent.swapChildren(i1, i2);  //swap back
+                return currentEnergy;
+            }
+        }
+        return currentEnergy;
+    }
+
+    public double tryAddFakeEdge(double temp, double currentEnergy) {
+        // it's sufficient to only add fake edges from leaves to nodes with multiple parents
+        if (nodesWithoutChildren.size() > 0 && nodesWithSeveralParents.size() > 0) {
+            PNode<V, E> from = nodesWithoutChildren.get(random.nextInt(nodesWithoutChildren.size()));
+            PNode<V, E> to = nodesWithSeveralParents.get(random.nextInt(nodesWithSeveralParents.size()));
+            PEdge<V, E> fakeEdge = new PEdge<V, E>(from, to);
+            from.addChild(fakeEdge);
+            to.addParent(fakeEdge);
+
+            if (!graphHasCycle(to)) {
+                double newEnergy = getEnergy();
+                if (acceptChange(currentEnergy, newEnergy, temp)) {
+                    fakeEdges.add(fakeEdge);
+                    return newEnergy;
+                }
+            }
+            // otherwise undo changes
+            from.removeChild(fakeEdge);
+            to.removeChild(fakeEdge);
+            return currentEnergy;
+        }
+        return currentEnergy;
+    }
+
+    public boolean graphHasCycle(PNode<V, E> root) {
+        return cycleDetector(root, new HashMap<PNode<V, E>, Boolean>());
+    }
+
+    boolean cycleDetector(PNode<V, E> node, HashMap<PNode<V, E>, Boolean> map) {
+        if (!map.containsKey(node)) {
+            map.put(node, true);
+        } else if (map.get(node)) {
+            return true;
+        } else {
+            map.put(node, true);
+        }
+        for (PEdge<V, E> edge : node.getChildren()) {
+            if (cycleDetector(edge.to, map)) {
+                return true;
+            }
+        }
+        map.put(node, false);
+        return false;
+    }
+
+    public double tryRemoveFakeEdge(double temp, double currentEnergy) {
+        if (fakeEdges.size() > 0) {
+            PEdge<V, E> fakeEdge = fakeEdges.get(random.nextInt(fakeEdges.size()));
+            fakeEdge.from.removeChild(fakeEdge);
+            fakeEdge.to.removeParent(fakeEdge);
+            double newEnergy = getEnergy();
+            if (acceptChange(currentEnergy, newEnergy, temp)) {
+                fakeEdges.remove(fakeEdge);
+                return newEnergy;
+            } else {
+                fakeEdge.from.addChild(fakeEdge);
+                fakeEdge.to.addParent(fakeEdge);
+                return currentEnergy;
+            }
+        }
+        return currentEnergy;
+    }
+
+    public boolean acceptChange(double oldEnergy, double newEnergy, double temp) {
+        if (newEnergy < oldEnergy) return true;
+
+        return Math.exp((oldEnergy - newEnergy)/temp) > Math.random();
     }
 }
 

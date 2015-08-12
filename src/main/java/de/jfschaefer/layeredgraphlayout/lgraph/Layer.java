@@ -1,5 +1,7 @@
 package de.jfschaefer.layeredgraphlayout.lgraph;
 
+import de.jfschaefer.layeredgraphlayout.util.Pair;
+
 import java.util.*;
 
 /**
@@ -25,5 +27,14 @@ public class Layer {
 
     ArrayList<LNode> getElements() {
         return elements;
+    }
+    ArrayList<Pair<LNode, LNode>> getChildConnections() {
+        ArrayList<Pair<LNode, LNode>> connections = new ArrayList<Pair<LNode, LNode>>();
+        for (LNode parent : elements) {
+            for (LNode child : parent.getChildren()) {
+                connections.add(new Pair<LNode, LNode>(parent, child));
+            }
+        }
+        return connections;
     }
 }
