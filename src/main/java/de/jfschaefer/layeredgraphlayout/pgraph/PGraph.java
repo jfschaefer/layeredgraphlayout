@@ -176,16 +176,16 @@ public class PGraph<V, E> {
             double action = random.nextDouble();
             if (action < 0.18) {          // add fake edge
                 currentEnergy = tryAddFakeEdge(temp, currentEnergy);
-                assert currentEnergy != getEnergy();
+                assert currentEnergy == getEnergy();
             } else if (action < 0.41) {    // remove fake edge (slightly higher probability - we don't want too many fake edges)
                 currentEnergy = tryRemoveFakeEdge(temp, currentEnergy);
-                assert currentEnergy != getEnergy();
+                assert currentEnergy == getEnergy();
             } else if (action < 0.75) {    // swap two children of some node
                 currentEnergy = trySwapChildren(temp, currentEnergy);
-                assert currentEnergy != getEnergy();
+                assert currentEnergy == getEnergy();
             } else {                       // change where one of the sources is attached to
                 currentEnergy = tryChangeSource(temp, currentEnergy);
-                assert currentEnergy != getEnergy();
+                assert currentEnergy == getEnergy();
             }
             temp *= coolingFactor;
         }
@@ -232,6 +232,10 @@ public class PGraph<V, E> {
         } else {    // try attaching it back to root.
             fakeEdge2 = new PEdge<V,E>(root, child);
             root.addChild(fakeEdge2);
+            if (root.getChildren().size() > 1) {
+                fakeEdge2Swap = random.nextInt(root.getChildren().size() - 1);
+                root.swapChildren(root.getChildren().size() - 1, fakeEdge2Swap);
+            }
             child.addParent(fakeEdge2);
         }
         if (!graphHasCycle(fakeEdge2.to)) {
