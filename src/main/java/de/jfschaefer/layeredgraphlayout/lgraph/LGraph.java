@@ -37,6 +37,16 @@ public class LGraph<V, E> {
         numberOfDummyNodes = 0;
     }
 
+    public void reset() {
+        nodeMap.clear();
+        edgeMap.clear();
+        numberOfDummyNodes = 0;
+        placed = false;
+        for (Layer layer : layers) {
+            layer.getElements().clear();
+        }
+    }
+
     public int getNumberOfDummyNodes() {
         return numberOfDummyNodes;
     }

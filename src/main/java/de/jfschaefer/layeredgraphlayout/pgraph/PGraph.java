@@ -33,6 +33,8 @@ public class PGraph<V, E> {
     public static final LGraphConfig defaultLGraphConfig = new LGraphConfig();
     public static final Random random = new Random();
 
+    private final LGraph<V, E> tmpLGraph = new LGraph<V, E>(defaultLGraphConfig);
+
     public PGraph() {
         nodeMap = new HashMap<Node<V, E>, PNode<V, E>>();
         nodes = new ArrayList<PNode<V, E>>();
@@ -125,6 +127,19 @@ public class PGraph<V, E> {
         return lgraph;
     }
 
+    private void fillTmpLGraph() {
+        tmpLGraph.reset();
+        resetLayers();
+        for (PEdge<V, E> edge : root.getChildren()) {
+            setLayersDFS(edge.to, 0);
+        }
+
+        for (PEdge<V, E> edge : root.getChildren()) {
+            tmpLGraph.addNode(edge.to.node, edge.to.getLayer());
+            populateLGraph(tmpLGraph, edge.to);
+        }
+    }
+
     protected void populateLGraph(LGraph<V, E> lgraph, PNode<V, E> node) {
         for (PEdge<V, E> edge : node.getChildren()) {
             if (!lgraph.containsNode(edge.to.node)) {
@@ -199,9 +214,12 @@ public class PGraph<V, E> {
     }
 
     public double getEnergy() {
-        LGraph<V, E> lgraph = generateLGraphEfficiently(defaultLGraphConfig);
-        double energy = lgraph.getNumberOfIntersections();
-        energy += 1 - Math.exp(-Math.sqrt(lgraph.getNumberOfDummyNodes()));  // removing intersections has strict priority
+        //LGraph<V, E> lgraph = generateLGraphEfficiently(defaultLGraphConfig);
+        fillTmpLGraph();
+        double energy = tmpLGraph.getNumberOfIntersections();
+        //energy += 1 - Math.exp(-Math.sqrt(lgraph.getNumberOfDummyNodes()));  // removing intersections has strict priority
+        energy += 0.5 * tmpLGraph.getNumberOfDummyNodes() / (double)nodes.size();
+        energy += 0.2 * Math.sqrt(tmpLGraph.getDensityMeasure());
         return energy;
     }
 
