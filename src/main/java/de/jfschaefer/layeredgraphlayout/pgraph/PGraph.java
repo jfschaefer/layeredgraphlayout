@@ -189,13 +189,13 @@ public class PGraph<V, E> {
 
         while (temp > 0.001) {
             double action = random.nextDouble();
-            if (action < 0.18) {          // add fake edge
+            if (action < 0.19) {          // add fake edge
                 currentEnergy = tryAddFakeEdge(temp, currentEnergy);
                 assert currentEnergy == getEnergy();
-            } else if (action < 0.41) {    // remove fake edge (slightly higher probability - we don't want too many fake edges)
+            } else if (action < 0.36) { // remove fake edge (slightly higher probability - we don't want too many fake edges) - update: apparently, that hypothesis is wrong
                 currentEnergy = tryRemoveFakeEdge(temp, currentEnergy);
                 assert currentEnergy == getEnergy();
-            } else if (action < 0.75) {    // swap two children of some node
+            } else if (action < 0.7) {  // swap two children of some node
                 currentEnergy = trySwapChildren(temp, currentEnergy);
                 assert currentEnergy == getEnergy();
             } else {                       // change where one of the sources is attached to
@@ -214,7 +214,6 @@ public class PGraph<V, E> {
     }
 
     public double getEnergy() {
-        //LGraph<V, E> lgraph = generateLGraphEfficiently(defaultLGraphConfig);
         fillTmpLGraph();
         double energy = tmpLGraph.getNumberOfIntersections();
         //energy += 1 - Math.exp(-Math.sqrt(lgraph.getNumberOfDummyNodes()));  // removing intersections has strict priority
@@ -233,7 +232,7 @@ public class PGraph<V, E> {
 
         int fakeEdge2Swap = -1;
 
-        if (fakeEdge.from.isRoot) {  // try attaching it somewhere else
+        if (fakeEdge.from.isRoot || random.nextDouble() < 0.4) {  // try attaching it somewhere else
             PNode<V, E> parent;
             if (Math.random() < 0.5 || nodesWithSeveralChildrenScaled.size() == 0) {      // try some completely random node
                 parent = nodes.get(random.nextInt(nodes.size()));
@@ -268,14 +267,14 @@ public class PGraph<V, E> {
 
         fakeEdge2.from.removeChild(fakeEdge2);
         child.removeParent(fakeEdge2);
-        //fakeEdge.from.addChild(fakeEdge);
-        fakeEdge.from.getChildren().add(oldIndex, fakeEdge);
-        child.addParent(fakeEdge);
         if (fakeEdge2Swap != -1) {
             PEdge<V, E> e = fakeEdge2.from.getChildren().get(fakeEdge2.from.getChildren().size()-1);
             fakeEdge2.from.getChildren().remove(fakeEdge2.from.getChildren().size()-1);
             fakeEdge2.from.getChildren().add(fakeEdge2Swap, e);
         }
+        //fakeEdge.from.addChild(fakeEdge);
+        fakeEdge.from.getChildren().add(oldIndex, fakeEdge);
+        child.addParent(fakeEdge);
         return currentEnergy;
     }
 
