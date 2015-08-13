@@ -176,25 +176,16 @@ public class PGraph<V, E> {
             double action = random.nextDouble();
             if (action < 0.18) {          // add fake edge
                 currentEnergy = tryAddFakeEdge(temp, currentEnergy);
-                if (currentEnergy != getEnergy()) {
-                    System.out.println("A");
-                }
+                assert currentEnergy != getEnergy();
             } else if (action < 0.41) {    // remove fake edge (slightly higher probability - we don't want too many fake edges)
                 currentEnergy = tryRemoveFakeEdge(temp, currentEnergy);
-                if (currentEnergy != getEnergy()) {
-                    System.out.println("B");
-                }
+                assert currentEnergy != getEnergy();
             } else if (action < 0.75) {    // swap two children of some node
                 currentEnergy = trySwapChildren(temp, currentEnergy);
-                if (currentEnergy != getEnergy()) {
-                    System.out.println("C");
-                }
+                assert currentEnergy != getEnergy();
             } else {                       // change where one of the sources is attached to
                 currentEnergy = tryChangeSource(temp, currentEnergy);
-                if (currentEnergy != getEnergy()) {
-                    System.err.println("D");
-                    break;
-                }
+                assert currentEnergy != getEnergy();
             }
             temp *= coolingFactor;
         }
@@ -210,7 +201,7 @@ public class PGraph<V, E> {
     public double getEnergy() {
         LGraph<V, E> lgraph = generateLGraphEfficiently(defaultLGraphConfig);
         double energy = lgraph.getNumberOfIntersections();
-        //energy += 1 - Math.exp(-Math.sqrt(lgraph.getNumberOfDummyNodes()));  // removing intersections has strict priority
+        energy += 1 - Math.exp(-Math.sqrt(lgraph.getNumberOfDummyNodes()));  // removing intersections has strict priority
         return energy;
     }
 
@@ -345,8 +336,11 @@ public class PGraph<V, E> {
                     }
                 }
             }
+            ArrayList<Integer> positions = new ArrayList<Integer>(toBeRemoved.size());
             for (PEdge<V, E> fakeEdge : toBeRemoved) {
-                fakeEdge.from.removeChild(fakeEdge);
+                int position = fakeEdge.from.getChildren().indexOf(fakeEdge);
+                fakeEdge.from.getChildren().remove(position);
+                positions.add(position);
                 fakeEdge.to.removeParent(fakeEdge);
             }
             double newEnergy = getEnergy();
@@ -354,8 +348,9 @@ public class PGraph<V, E> {
                 fakeEdges.removeAll(toBeRemoved);
                 return newEnergy;
             } else {
-                for (PEdge<V, E> fakeEdge : toBeRemoved) {
-                    fakeEdge.from.addChild(fakeEdge);
+                for (int i = positions.size() - 1; i >= 0; i--) {
+                    PEdge<V, E> fakeEdge = toBeRemoved.get(i);
+                    fakeEdge.from.getChildren().add(positions.get(i), fakeEdge);
                     fakeEdge.to.addParent(fakeEdge);
                 }
                 return currentEnergy;
