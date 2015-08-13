@@ -7,7 +7,7 @@ package de.jfschaefer.layeredgraphlayout.layout;
 public class LayoutConfig {
     protected boolean bezier = true;
     protected boolean arrowheads = true;
-    protected double controlPointDistance = 0.5d;
+    protected double controlPointDistance = 0.25d;
     protected double graphPadding = 16d;
 
     public void setBezier(boolean bezier) {

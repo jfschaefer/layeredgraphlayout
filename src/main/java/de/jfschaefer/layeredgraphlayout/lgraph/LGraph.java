@@ -41,6 +41,43 @@ public class LGraph<V, E> {
         return numberOfDummyNodes;
     }
 
+    public int getDensityMeasure() {  // a value indicating how for children/parents of nodes are distributed
+        int value = 0;
+        for (Layer layer : layers) {
+            for (LNode node : layer.getElements()) {
+                if (!node.getChildren().isEmpty()) {
+                    int minchild = Integer.MAX_VALUE;
+                    int maxchild = Integer.MIN_VALUE;
+                    for (LNode child : node.getChildren()) {
+                        if (child.getPos() < minchild) {
+                            minchild = child.getPos();
+                        }
+                        if (child.getPos() > maxchild) {
+                            maxchild = child.getPos();
+                        }
+                    }
+                    int v = maxchild - minchild - node.getChildren().size() + 1;
+                    value += v * v;   // large gaps are much worse
+                }
+                if (!node.getParents().isEmpty()) {
+                    int minparent = Integer.MAX_VALUE;
+                    int maxparent = Integer.MIN_VALUE;
+                    for (LNode parent : node.getParents()) {
+                        if (parent.getPos() < minparent) {
+                            minparent = parent.getPos();
+                        }
+                        if (parent.getPos() > maxparent) {
+                            maxparent = parent.getPos();
+                        }
+                    }
+                    int v = maxparent - minparent - node.getParents().size() + 1;
+                    value += v * v;
+                }
+            }
+        }
+        return value;
+    }
+
     public void addNode(Node<V, E> node, int layer) {
         assert !placed;
         assert !nodeMap.containsKey(node);
@@ -229,15 +266,29 @@ public class LGraph<V, E> {
 
 
     public void graphPlacement() {
-        // TODO: This is just short dummy algorithm - implement something reasonable instead
         placed = true;
 
-        // top down (places the nodes in a valid way, large gaps)
+        // top down (places the nodes in a valid way, possible with larger gaps)
         for (Layer layer : layers) {
             double nextPos = 0d;
             for (LNode node : layer.getElements()) {
                 node.setXPosLeft(nextPos);
-                nextPos = node.getXPosRight() + config.getGapBetweenNodes() + 0 * node.getWidth();
+                nextPos = node.getXPosRight() + config.getGapBetweenNodes() + 0.4 * node.getWidth();
+            }
+        }
+
+        // shift entire layers left/right to relax macroscopic tensions
+        for (int i = 0; i < layers.size() - 1; i++) {
+            Layer layer = layers.get(i);
+            int n = 0;
+            double tension = 0d;
+            for (Pair<LNode, LNode> connection : layer.getChildConnections()) {
+                n++;
+                tension += connection.first.getXPos() - connection.second.getXPos();
+            }
+            tension /= n;
+            for (LNode lnode : layers.get(i+1).getElements()) {
+                lnode.setXPos(lnode.getXPos() + tension);
             }
         }
 
