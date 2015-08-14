@@ -51,6 +51,10 @@ public class LGraph<V, E> {
         return numberOfDummyNodes;
     }
 
+    public int getNumberOfLayers() {
+        return numberOfLayers;
+    }
+
     public int getDensityMeasure() {  // a value indicating how for children/parents of nodes are distributed
         int value = 0;
         for (Layer layer : layers) {
@@ -283,7 +287,7 @@ public class LGraph<V, E> {
             double nextPos = 0d;
             for (LNode node : layer.getElements()) {
                 node.setXPosLeft(nextPos);
-                nextPos = node.getXPosRight() + config.getGapBetweenNodes() + 0.4 * node.getWidth();
+                nextPos = node.getXPosRight() + config.getGapBetweenNodes() + config.getSpecialPaddingA() * node.getWidth();
             }
         }
 
@@ -387,10 +391,27 @@ public class LGraph<V, E> {
 
         for (Map.Entry<Edge<V, E>, ArrayList<LNode>> entry : edgeMap.entrySet()) {
             ArrayList<Point> points = new ArrayList<Point>();
-            for (int i = 0; i < entry.getValue().size(); i++) {
-                LNode lnode = entry.getValue().get(i);
-                points.add(new Point(lnode.getXPos(), lnode.getLayer() * config.getLayerDistance() +
+            LNode lnode = entry.getValue().get(0);
+            assert !lnode.isDummy();
+            assert entry.getValue().size() > 1;
+            points.add(new Point(Math.max(lnode.getXPosLeft(), Math.min(lnode.getXPosRight(),
+                        lnode.getXPos() + (entry.getValue().get(1).getXPos() - lnode.getXPos()) * 0.5 * lnode.getHeight() / config.getLayerDistance())),
+                    lnode.getLayer() * config.getLayerDistance() + 0.5 * lnode.getHeight()));
+            LNode prev = lnode;
+            for (int i = 1; i < entry.getValue().size(); i++) {
+                lnode = entry.getValue().get(i);
+                /* points.add(new Point(lnode.getXPos(), lnode.getLayer() * config.getLayerDistance() +
                         0.5 * (i == 0 ? 1 : -1) * (!lnode.isDummy() ? lnode.getHeight() : 0)));
+                        */
+                if (!lnode.isDummy()) {
+                    assert i == entry.getValue().size() - 1;
+                    points.add(new Point(Math.max(lnode.getXPosLeft(), Math.min(lnode.getXPosRight(),
+                                lnode.getXPos() - (lnode.getXPos() - prev.getXPos()) * 0.5 * lnode.getHeight() / config.getLayerDistance())),
+                            lnode.getLayer() * config.getLayerDistance() - 0.5 * lnode.getHeight()));
+                } else {
+                    points.add(new Point(lnode.getXPos(), lnode.getLayer() * config.getLayerDistance()));
+                }
+                prev = lnode;
             }
             layout.addEdge(entry.getKey(), points);
         }

@@ -3,6 +3,7 @@ package de.jfschaefer.layeredgraphlayout.tree;
 import de.jfschaefer.layeredgraphlayout.Edge;
 import de.jfschaefer.layeredgraphlayout.lgraph.LGraphConfig;
 import de.jfschaefer.layeredgraphlayout.lgraph.LGraph;
+import de.jfschaefer.layeredgraphlayout.lgraph.LNode;
 
 import java.util.*;
 

@@ -10,6 +10,7 @@ public class LGraphConfig implements Serializable {
     protected double dummyNodeWidth = 9d;
     protected double gapBetweenNodes = 16d;
     protected double layerDistance = 81d;
+    protected double specialPaddingA = 0.4d;      //special padding factor for graph placement
 
     public void setDummyNodeWidth(double width) {
         dummyNodeWidth = width;
@@ -33,5 +34,13 @@ public class LGraphConfig implements Serializable {
 
     public double getLayerDistance() {
         return layerDistance;
+    }
+
+    public void setSpecialPaddingA(double factor) {
+        specialPaddingA = factor;
+    }
+
+    public double getSpecialPaddingA() {
+        return specialPaddingA;
     }
 }
