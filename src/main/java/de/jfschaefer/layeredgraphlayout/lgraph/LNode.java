@@ -55,6 +55,19 @@ public class LNode {
         return parents;
     }
 
+    public ArrayList<LNode> generateSortedChildren() {
+        ArrayList<LNode> list = new ArrayList<LNode>();
+        for (LNode child : getChildren()) {
+            list.add(child);
+        }
+        list.sort(new Comparator<LNode>() {
+            public int compare(LNode o1, LNode o2) {
+                return o1.getPos() - o2.getPos();
+            }
+        });
+        return list;
+    }
+
     public LNode getLeftMostChild() {
         LNode leftmost = null;
         int leftMostPos = Integer.MAX_VALUE;

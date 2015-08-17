@@ -161,123 +161,50 @@ public class LGraph<V, E> {
      */
 
     public void treePlacement() {
-        // ONLY WORKS WELL FOR TREES
+        // ONLY WORKS FOR TREES, ROOT NODE HAS TO BE IN FIRST LAYER
+        recursiveWideTreePlacement(layers.get(0).getElements().get(0), 0d);
+    }
 
-        placed = true;
-        boolean somethingHasChanged;
-
-        // top down
-        for (Layer layer : layers) {
-            double nextPos = 0d;
-            for (LNode node : layer.getElements()) {
-                double parentPos;
-                if (node.getParents().isEmpty()) {
-                    parentPos = 0d;
-                } else {
-                    parentPos = 0d;
-                    for (LNode parent : node.getParents()) {    //parent set should be singleton, but just in case
-                        parentPos += parent.getXPos();
-                    }
-                    parentPos /= node.getParents().size();
-                    parentPos -= node.getWidth() * 0.5;
-                }
-                node.setXPosLeft(Math.max(nextPos, Math.max(parentPos, node.getXPosLeft())));
-                nextPos = node.getXPosRight() + config.getGapBetweenNodes();
+    public Pair<Double, Double> recursiveWideTreePlacement(LNode root, double next) {
+        if (root.getChildren().isEmpty()) {
+            root.setXPosLeft(next);
+            return new Pair<Double, Double>(root.getXPosLeft(), root.getXPosRight());
+        } else {
+            double left = next;
+            double right = next;
+            double newnext = next;
+            for (LNode child : root.generateSortedChildren()) {
+                Pair<Double, Double> pos = recursiveWideTreePlacement(child, newnext);
+                right = pos.second;
+                newnext = right + config.getGapBetweenNodes();
             }
-        }
-
-        int maxIterations = 36;
-
-        do {
-            somethingHasChanged = false;
-
-            // bottom up
-            for (int i = layers.size() - 1; i >= 0; i--) {
-                Layer layer = layers.get(i);
-                for (int j = 0; j < layer.getElements().size(); j++) {
-                    LNode node = layer.getElements().get(j);
-                    double newPos;
-                    if (node.getChildren().isEmpty()) {
-                        newPos = node.getXPos();
-                    } else {
-                        newPos = 0d;
-                        for (LNode child : node.getChildren()) {
-                            newPos += child.getXPos();
-                        }
-                        newPos /= node.getChildren().size();
-                    }
-
-                    node.setXPos(Math.max(newPos, node.getXPos()));
-
-                    for (int k = j + 1; k < layer.getElements().size(); k++) {
-                        LNode prev = layer.getElements().get(k - 1);
-                        LNode cur = layer.getElements().get(k);
-
-                        double delta = cur.getXPosLeft() - (prev.getXPosRight() + config.getGapBetweenNodes());
-                        if (delta < 0) {
-                            cur.setXPos(cur.getXPos() - delta);
-                        } else {
-                            break;
-                        }
-                    }
+            double myPos = 0.5 * (left + right);
+            root.setXPos(myPos);
+            if (root.getPos() > 0) {
+                LNode prev = layers.get(root.getLayer()).getElements().get(root.getPos() - 1);
+                double shift = prev.getXPosRight() + config.getGapBetweenNodes() - root.getXPosLeft();
+                if (shift > 0) {
+                    shiftSubTree(root, shift);
+                    left += shift;
+                    right += shift;
                 }
             }
-
-            /* // fix nodes too close   -   apparently, never needed
-            for (Layer layer : layers) {
-                for (int j = 1; j < layer.getElements().size(); j++) {
-                    LNode prev = layer.getElements().get(j - 1);
-                    LNode cur = layer.getElements().get(j);
-                    double delta = cur.getXPosLeft() - (prev.getXPosRight() + config.getGapBetweenNodes());
-                    if (delta < 0) {
-                        somethingHasChanged = true;
-                        cur.setXPos(cur.getXPos() - delta);
-                    }
-                }
-            } */
-
-            // different top down
-            for (Layer layer : layers) {
-                for (int j = 0; j < layer.getElements().size(); j++) {
-                    LNode node = layer.getElements().get(j);
-                    double idealPos;
-                    if (node.getChildren().isEmpty()) {
-                        idealPos = node.getXPos();
-                    } else {
-                        idealPos = 0d;
-                        for (LNode child : node.getChildren()) {
-                            idealPos += child.getXPos();
-                        }
-                        idealPos /= node.getChildren().size();
-                    }
-                    double shift = idealPos - node.getXPos();
-                    if (shift < -0.4) {
-                        for (LNode child : node.getChildren()) {
-                            child.setXPos(child.getXPos() - shift);
-                        }
-                    }
-                }
+            if (root.getXPosRight() > right) {
+                right = root.getXPosRight();
             }
-
-            // fix nodes too close
-            for (Layer layer : layers) {
-                for (int j = 1; j < layer.getElements().size(); j++) {
-                    LNode prev = layer.getElements().get(j - 1);
-                    LNode cur = layer.getElements().get(j);
-                    double delta = cur.getXPosLeft() - (prev.getXPosRight() + config.getGapBetweenNodes());
-                    if (delta < -EPSILON) {
-                        somethingHasChanged = true;
-                        cur.setXPos(cur.getXPos() - delta);
-                    }
-                }
+            if (root.getXPosLeft() < left) {
+                left = root.getXPosLeft();
             }
-        } while (somethingHasChanged && --maxIterations != 0);
-
-        if (maxIterations == 0) {
-            System.err.println("Warning: de.jfschaefer.layeredgraphlayout.lgraph.LGraph.treePlacement: Reached max. iterations");
+            return new Pair<Double, Double>(left, right);
         }
     }
 
+    public void shiftSubTree(LNode root, double shift) {
+        root.setXPos(root.getXPos() + shift);
+        for (LNode child : root.getChildren()) {
+            shiftSubTree(child, shift);
+        }
+    }
 
     public void graphPlacement() {
         placed = true;
