@@ -10,13 +10,7 @@ import java.util.*;
  */
 
 public class LatexGenerator<V, E> {
-
-    public LatexGenerator() {
-
-    }
-
-
-    public static <V, E> String generateLatex(Layout<V, E> layout, Map<V, String> nodeMap, Map<E, String> edgeMap) {
+    public static <V, E> String generateLatex(Layout<V, E> layout, Map<V, String> nodeMap, Map<E, String> edgeMap, boolean drawBox) {
         StringBuilder sb = new StringBuilder();
         sb.append("\\begin{tikzpicture}\n");
         de.jfschaefer.layeredgraphlayout.layout.Vector shift = layout.getShift();
@@ -29,7 +23,11 @@ public class LatexGenerator<V, E> {
             sb.append(pos.x + shift.x);
             sb.append("pt, ");
             sb.append(layout.getHeight() - pos.y - shift.y);
-            sb.append("pt) [draw, minimum width=");
+            sb.append("pt) [");
+            if (drawBox) {
+                sb.append("draw");
+            }
+            sb.append(", minimum width=");
             sb.append(size.first);
             sb.append("pt, minimum height=");
             sb.append(size.second);
