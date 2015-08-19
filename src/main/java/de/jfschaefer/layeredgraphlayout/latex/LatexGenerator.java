@@ -31,7 +31,7 @@ public class LatexGenerator<V, E> {
             sb.append(size.first);
             sb.append("pt, minimum height=");
             sb.append(size.second);
-            sb.append("pt] {");
+            sb.append("pt] {\\Large ");
             sb.append(latexEscape(nodeMap.get(node)));
             sb.append("};\n");
         }
